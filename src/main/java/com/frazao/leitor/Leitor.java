@@ -3,7 +3,7 @@ package com.frazao.leitor;
 import java.util.List;
 
 import com.frazao.Argumentos;
-import com.frazao.bd.Esquema;
+import com.frazao.leitor.bd.Esquema;
 import com.frazao.leitor.mysql.LeitorMySQL;
 
 public interface Leitor {

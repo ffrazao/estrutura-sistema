@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.frazao.Argumentos;
-import com.frazao.bd.Esquema;
 import com.frazao.escritor.java_springboot.EscritorJavaSpringBoot;
+import com.frazao.leitor.bd.Esquema;
 
 public interface Escritor {
 

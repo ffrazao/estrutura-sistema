@@ -1,18 +1,18 @@
-package com.frazao.bd;
+package com.frazao.leitor.bd;
 
 public class Coluna extends Nomeavel {
 	
-	public Coluna(String nome) {
-		super(nome);
-	}
-
 	private boolean chavePrimaria;
-	
+
 	private String complemento;
 	
 	private boolean permiteNulo;
 	
 	private String tipo;
+	
+	public Coluna(String nome) {
+		super(nome);
+	}
 
 	public String getComplemento() {
 		return complemento;

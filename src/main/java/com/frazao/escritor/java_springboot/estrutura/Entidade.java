@@ -1,34 +1,36 @@
-package com.frazao.escritor.java_springboot;
+package com.frazao.escritor.java_springboot.estrutura;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.frazao.Argumentos;
-import com.frazao.bd.Coluna;
-import com.frazao.bd.Esquema;
-import com.frazao.bd.Tabela;
+import com.frazao.escritor.Escritor;
+import com.frazao.escritor.java_springboot.EscritorJavaSpringBoot;
+import com.frazao.leitor.bd.Coluna;
+import com.frazao.leitor.bd.Esquema;
+import com.frazao.leitor.bd.Tabela;
 
 public class Entidade extends EstruturaBasica {
 
 	private Map<String, EntidadeInfo> mapa = new HashMap<>();
+	
+	public EscritorJavaSpringBoot getEscritor() {
+		return (EscritorJavaSpringBoot) this.escritor;
+	}
 
-	public Entidade(Argumentos argumentos, List<Esquema> conteudo, Map<String, File> diretorios) {
-		super(argumentos, conteudo, diretorios);
-		Set<String> t = new TreeSet<>();
-		for (Esquema esquema : this.conteudo) {
+	public Entidade(Escritor escritor) {
+		super(escritor);
+		
+		for (Esquema esquema : this.getEscritor().conteudo) {
 			for (Tabela tabela : esquema.getTabelas()) {
 				EntidadeInfo entidade = new EntidadeInfo(esquema, tabela);
 				for (Coluna coluna : tabela.getColunas()) {
-					t.add(coluna.getTipo());
+					entidade.addPropriedadeInfo(new PropriedadeInfo(esquema, tabela, coluna));
 				}
 				if (mapa.containsKey(entidade.pacote.concat(entidade.nome))) {
 					throw new IllegalStateException("Definição repetida");
@@ -37,15 +39,14 @@ public class Entidade extends EstruturaBasica {
 				}
 			}
 		}
-		System.out.println(t);
 
 	}
 
 	@Override
-	public void escrever(EscritorJavaSpringBoot escritor) throws Exception {
-		File dir = this.diretorios.get("entidade");
+	public void escrever() throws Exception {
+		File dir = this.getEscritor().diretorios.get("entidade");
 
-		String pacote = String.format("%s.modelo.entidade", this.argumentos.pacoteRaiz);
+		String pacote = String.format("%s.modelo.entidade", this.getEscritor().argumentos.pacoteRaiz);
 
 		for (Entry<String, EntidadeInfo> item : mapa.entrySet()) {
 			if (item.getValue().pacote == null) {
@@ -69,8 +70,10 @@ public class Entidade extends EstruturaBasica {
 				w.append("package ").append(item.getValue().pacoteFinal).append(";");
 				w.newLine();
 				w.newLine();
-				
+
 				// importações
+				w.append(String.format("import javax.persistence.Column;"));
+				w.newLine();
 				w.append(String.format("import javax.persistence.Entity;"));
 				w.newLine();
 				w.append(String.format("import javax.persistence.EnumType;"));
@@ -85,17 +88,13 @@ public class Entidade extends EstruturaBasica {
 				w.newLine();
 				w.append(String.format("import javax.persistence.Table;"));
 				w.newLine();
+				w.append(String.format("import javax.persistence.Lob;"));
+				w.newLine();
+				w.append(String.format("import javax.persistence.Basic;"));
+				w.newLine();
 				w.append(String.format(""));
 				w.newLine();
 				w.append(String.format("import com.fasterxml.jackson.annotation.JsonIgnore;"));
-				w.newLine();
-				w.append(String.format("import com.frazao.lacodeamorrest.modelo.EntidadeBaseTemId;"));
-				w.newLine();
-				w.append(String.format("import com.frazao.lacodeamorrest.modelo.dominio.Confirmacao;"));
-				w.newLine();
-				w.append(String.format("import com.frazao.lacodeamorrest.modelo.dominio.Perfil;"));
-				w.newLine();
-				w.append(String.format(""));
 				w.newLine();
 				w.append(String.format("import lombok.Data;"));
 				w.newLine();
@@ -103,11 +102,16 @@ public class Entidade extends EstruturaBasica {
 				w.newLine();
 				w.append(String.format(""));
 				w.newLine();
-				
+				w.newLine();
+				w.append(String.format("import %s.modelo.EntidadeBaseTemId;", this.getEscritor().argumentos.pacoteRaiz));
+				w.newLine();
+				w.append(String.format(""));
+
 				// declarar a classe
 				w.append(String.format("@Entity(name = \"%s\")", item.getValue().nome));
 				w.newLine();
-				w.append(String.format("@Table(schema = \"%s\", name = \"%s\")", item.getValue().esquema, item.getValue().tabela));
+				w.append(String.format("@Table(schema = \"%s\", name = \"%s\")", item.getValue().esquema,
+						item.getValue().tabela));
 				w.newLine();
 				w.append(String.format("@Data"));
 				w.newLine();
@@ -117,6 +121,15 @@ public class Entidade extends EstruturaBasica {
 				w.newLine();
 
 				w.append("   ");
+				w.append(String.format("private static final long serialVersionUID = 1L;"));
+				w.newLine();
+
+				for (PropriedadeInfo pi: item.getValue().propriedadeInfoList) {
+					w.newLine();
+					w.append(pi.toString());
+					w.newLine();
+				}
+				
 				w.newLine();
 				w.newLine();
 

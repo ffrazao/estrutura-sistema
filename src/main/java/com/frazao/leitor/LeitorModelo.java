@@ -2,7 +2,7 @@ package com.frazao.leitor;
 
 public enum LeitorModelo {
 
-	MYSQL("jdbc:mysql://localhost/", new String[] { "!information_schema", "!mysql", "!performance_schema", "!sys" });
+	MYSQL("jdbc:mysql://localhost/", new String[] { "!information_schema", "!mysql", "!performance_schema", "!sys", "!bugs" });
 
 	public static LeitorModelo getPadrao() {
 		return LeitorModelo.MYSQL;

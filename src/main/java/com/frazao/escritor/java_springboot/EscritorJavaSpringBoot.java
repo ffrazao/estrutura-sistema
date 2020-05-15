@@ -6,47 +6,41 @@ import java.util.List;
 import java.util.Map;
 
 import com.frazao.Argumentos;
-import com.frazao.bd.Esquema;
 import com.frazao.escritor.Escritor;
+import com.frazao.escritor.java_springboot.estrutura.Bo;
+import com.frazao.escritor.java_springboot.estrutura.Dao;
+import com.frazao.escritor.java_springboot.estrutura.Dominio;
+import com.frazao.escritor.java_springboot.estrutura.Entidade;
+import com.frazao.escritor.java_springboot.estrutura.Filtro;
+import com.frazao.escritor.java_springboot.estrutura.Rest;
+import com.frazao.leitor.bd.Esquema;
 
 public class EscritorJavaSpringBoot implements Escritor {
 
-	private Argumentos argumentos;
+	public Argumentos argumentos;
 
-	private Dominio dominio;
+	public Bo bo;
 
-	private Entidade entidade;
+	public List<Esquema> conteudo;
 
-	private Filtro filtro;
+	public Dao dao;
 
-	private Dao dao;
+	public Map<String, File> diretorios;
 
-	private Bo bo;
+	public Dominio dominio;
 
-	private Rest rest;
+	public Entidade entidade;
+
+	public Filtro filtro;
+
+	public Rest rest;
 
 	public EscritorJavaSpringBoot(Argumentos argumentos) throws Exception {
 		this.argumentos = argumentos;
 	}
 
-	@Override
-	public void escrever(List<Esquema> conteudo) throws Exception {
-
-		Map<String, File> diretorios = criarDiretoriosPadrao();
-
-		dominio = new Dominio(this.argumentos, conteudo, diretorios);
-		entidade = new Entidade(this.argumentos, conteudo, diretorios);
-		filtro = new Filtro(this.argumentos, conteudo, diretorios);
-		dao = new Dao(this.argumentos, conteudo, diretorios);
-		bo = new Bo(this.argumentos, conteudo, diretorios);
-		rest = new Rest(this.argumentos, conteudo, diretorios);
-
-		dominio.escrever(this);
-		entidade.escrever(this);
-		filtro.escrever(this);
-		dao.escrever(this);
-		bo.escrever(this);
-		rest.escrever(this);
+	private void copiarArquivosEstaticos(List<Esquema> conteudo, Map<String, File> diretorios) {
+		// TODO Auto-generated method stub
 
 	}
 
@@ -114,6 +108,31 @@ public class EscritorJavaSpringBoot implements Escritor {
 
 		System.out.println("Preparando para escrever no diretorio " + raiz.getAbsolutePath());
 		return result;
+	}
+
+	@Override
+	public void escrever(List<Esquema> conteudo) throws Exception {
+
+		this.conteudo = conteudo;
+
+		this.diretorios = criarDiretoriosPadrao();
+
+		copiarArquivosEstaticos(conteudo, diretorios);
+
+		dominio = new Dominio(this);
+		entidade = new Entidade(this);
+		filtro = new Filtro(this);
+		dao = new Dao(this);
+		bo = new Bo(this);
+		rest = new Rest(this);
+
+		dominio.escrever();
+		entidade.escrever();
+		filtro.escrever();
+		dao.escrever();
+		bo.escrever();
+		rest.escrever();
+
 	}
 
 }

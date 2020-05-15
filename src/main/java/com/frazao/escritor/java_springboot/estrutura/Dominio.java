@@ -1,28 +1,32 @@
-package com.frazao.escritor.java_springboot;
+package com.frazao.escritor.java_springboot.estrutura;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.CaseUtils;
 
-import com.frazao.Argumentos;
-import com.frazao.bd.Coluna;
-import com.frazao.bd.Esquema;
-import com.frazao.bd.Tabela;
+import com.frazao.escritor.Escritor;
+import com.frazao.escritor.java_springboot.EscritorJavaSpringBoot;
+import com.frazao.leitor.bd.Coluna;
+import com.frazao.leitor.bd.Esquema;
+import com.frazao.leitor.bd.Tabela;
 
 public class Dominio extends EstruturaBasica {
 
 	private Map<String, DominioInfo> mapa = new HashMap<>();
+	
+	public EscritorJavaSpringBoot getEscritor() {
+		return (EscritorJavaSpringBoot) this.escritor;
+	}
 
-	public Dominio(Argumentos argumentos, List<Esquema> conteudo, Map<String, File> diretorios) {
-		super(argumentos, conteudo, diretorios);
+	public Dominio(Escritor escritor) {
+		super(escritor);
 
 		// iniciar alguns dominios comuns para definir o nome
 		String[] t;
@@ -35,7 +39,7 @@ public class Dominio extends EstruturaBasica {
 		t = new String[] { "M", "F" };
 		mapa.put(Arrays.asList(t).toString(), new DominioInfo(t, "PessoaGenero"));
 
-		for (Esquema esquema : this.conteudo) {
+		for (Esquema esquema : this.getEscritor().conteudo) {
 			for (Tabela tabela : esquema.getTabelas()) {
 				for (Coluna coluna : tabela.getColunas()) {
 					if ("enum".equalsIgnoreCase(coluna.getTipo()) || "set".equalsIgnoreCase(coluna.getTipo())) {
@@ -69,10 +73,10 @@ public class Dominio extends EstruturaBasica {
 	}
 
 	@Override
-	public void escrever(EscritorJavaSpringBoot escritor) throws Exception {
-		File dir = this.diretorios.get("dominio");
+	public void escrever() throws Exception {
+		File dir = this.getEscritor().diretorios.get("dominio");
 
-		String pacote = String.format("%s.modelo.dominio", this.argumentos.pacoteRaiz);
+		String pacote = String.format("%s.modelo.dominio", this.getEscritor().argumentos.pacoteRaiz);
 
 		for (Entry<String, DominioInfo> item : mapa.entrySet()) {
 			if (item.getValue().pacote == null) {
@@ -152,8 +156,8 @@ public class Dominio extends EstruturaBasica {
 		}
 	}
 
-	public DominioInfo getDominio(String esquema, String tabela, String coluna) {
-		return getDominio(String.format("%s.%s.%s", esquema, tabela, coluna));
+	public DominioInfo getDominio(Esquema esquema, Tabela tabela, Coluna coluna) {
+		return getDominio(esquema.getNome(), tabela.getNome(), coluna.getNome());
 	}
 
 	public DominioInfo getDominio(String local) {
@@ -165,6 +169,10 @@ public class Dominio extends EstruturaBasica {
 			}
 		}
 		throw new NullPointerException();
+	}
+
+	public DominioInfo getDominio(String esquema, String tabela, String coluna) {
+		return getDominio(String.format("%s.%s.%s", esquema, tabela, coluna));
 	}
 
 }

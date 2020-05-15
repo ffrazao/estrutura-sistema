@@ -1,4 +1,4 @@
-package com.frazao.bd;
+package com.frazao.leitor.bd;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

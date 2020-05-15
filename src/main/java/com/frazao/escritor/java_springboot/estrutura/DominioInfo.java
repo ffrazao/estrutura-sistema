@@ -1,4 +1,4 @@
-package com.frazao.escritor.java_springboot;
+package com.frazao.escritor.java_springboot.estrutura;
 
 import java.util.ArrayList;
 import java.util.List;

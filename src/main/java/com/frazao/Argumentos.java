@@ -22,7 +22,7 @@ import com.frazao.leitor.LeitorModelo;
 
 public class Argumentos {
 	
-	private final static String DIRETORIO_LOCAL_PADRAO = "saida";
+	private final static String DIRETORIO_LOCAL_PADRAO = "../saida";
 
 	private static final String PACOTE_LOCAL_PADRAO = "com.frazao";
 

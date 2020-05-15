@@ -1,4 +1,4 @@
-package com.frazao.bd;
+package com.frazao.leitor.bd;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +17,11 @@ public class Tabela extends Nomeavel {
 		this.colunas.add(valor);
 		return valor;
 	}
+	
+	public Relacionamento addRelacionamento(Relacionamento valor) {
+		this.relacionamentos.add(valor);
+		return valor;
+	}
 
 	public List<Coluna> getColunas() {
 		return colunas;
@@ -24,10 +29,6 @@ public class Tabela extends Nomeavel {
 
 	public List<Relacionamento> getRelacionamentos() {
 		return relacionamentos;
-	}
-
-	public void setRelacionamentos(List<Relacionamento> relacionamentos) {
-		this.relacionamentos = relacionamentos;
 	}
 
 }

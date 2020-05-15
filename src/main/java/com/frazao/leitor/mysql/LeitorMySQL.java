@@ -10,21 +10,25 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
 import com.frazao.Argumentos;
-import com.frazao.bd.BDConexao;
-import com.frazao.bd.Coluna;
-import com.frazao.bd.Esquema;
-import com.frazao.bd.Tabela;
 import com.frazao.leitor.Leitor;
+import com.frazao.leitor.bd.BDConexao;
+import com.frazao.leitor.bd.Coluna;
+import com.frazao.leitor.bd.Esquema;
+import com.frazao.leitor.bd.Relacionamento;
+import com.frazao.leitor.bd.Tabela;
 
 public class LeitorMySQL implements Leitor {
 
 	private Argumentos argumentos;
 
+	private Connection con;
+
 	public LeitorMySQL(Argumentos argumentos) throws SQLException {
 		this.argumentos = argumentos;
+		this.con = new BDConexao().getConexao(this.argumentos);
 	}
 
-	private ResultSet abrirColunas(Connection con, String esquema, String tabela) throws SQLException {
+	private ResultSet abrirColunas(String esquema, String tabela) throws SQLException {
 		StringBuilder sql = new StringBuilder();
 		sql.append("SELECT COLUMN_NAME AS nome,").append("\n");
 		sql.append("       COLUMN_KEY AS chave_primaria,").append("\n");
@@ -37,44 +41,51 @@ public class LeitorMySQL implements Leitor {
 		sql.append("AND    TABLE_NAME = ?").append("\n");
 		sql.append("ORDER BY ORDINAL_POSITION").append("\n");
 
-		PreparedStatement ps = con.prepareStatement(sql.toString());
+		PreparedStatement ps = this.con.prepareStatement(sql.toString());
 		ps.setString(1, esquema);
 		ps.setString(2, tabela);
 
 		return ps.executeQuery();
 	}
 
-	private ResultSet abrirEsquema(Connection con) throws SQLException {
+	private ResultSet abrirEsquema(String esquema) throws SQLException {
 		StringBuilder sql = new StringBuilder();
 		sql.append("SELECT DISTINCT TABLE_SCHEMA as esquema").append("\n");
 		sql.append("FROM            INFORMATION_SCHEMA.TABLES").append("\n");
 		sql.append("WHERE           1 = 1").append("\n");
 		List<String> naoTemP = new ArrayList<>(), temP = new ArrayList<>();
-		if (!StringUtils.isAllBlank(this.argumentos.esquema.toArray(new String[this.argumentos.esquema.size()]))) {
-			StringBuilder naoTem = new StringBuilder(), tem = new StringBuilder();
-			for (int i = 0; i < this.argumentos.esquema.size(); i++) {
-				String esquema = this.argumentos.esquema.get(i);
-				if (StringUtils.isNotBlank(esquema)) {
-					if (esquema.startsWith("!")) {
-						naoTem.append(naoTem.length() == 0 ? "AND             TABLE_SCHEMA NOT IN(?" : ", ?");
-						naoTemP.add(esquema.replaceFirst("\\!", ""));
-					} else {
-						tem.append(tem.length() == 0 ? "AND             TABLE_SCHEMA IN(?" : ", ?");
-						temP.add(esquema);
+		if (StringUtils.isNotBlank(esquema)) {
+			sql.append("AND         TABLE_SCHEMA = ?");
+		} else {
+			if (!StringUtils.isAllBlank(this.argumentos.esquema.toArray(new String[this.argumentos.esquema.size()]))) {
+				StringBuilder naoTem = new StringBuilder(), tem = new StringBuilder();
+				for (int i = 0; i < this.argumentos.esquema.size(); i++) {
+					String esquemaArg = this.argumentos.esquema.get(i);
+					if (StringUtils.isNotBlank(esquemaArg)) {
+						if (esquemaArg.startsWith("!")) {
+							naoTem.append(naoTem.length() == 0 ? "AND             TABLE_SCHEMA NOT IN(?" : ", ?");
+							naoTemP.add(esquemaArg.replaceFirst("\\!", ""));
+						} else {
+							tem.append(tem.length() == 0 ? "AND             TABLE_SCHEMA IN(?" : ", ?");
+							temP.add(esquemaArg);
+						}
 					}
 				}
-			}
-			if (naoTem.length() > 0) {
-				sql.append(naoTem).append(")").append("\n");
-			}
-			if (tem.length() > 0) {
-				sql.append(tem).append(")").append("\n");
+				if (naoTem.length() > 0) {
+					sql.append(naoTem).append(")").append("\n");
+				}
+				if (tem.length() > 0) {
+					sql.append(tem).append(")").append("\n");
+				}
 			}
 		}
 		sql.append("ORDER BY 1").append("\n");
 
-		PreparedStatement ps = con.prepareStatement(sql.toString());
-		if (!StringUtils.isAllBlank(this.argumentos.esquema.toArray(new String[this.argumentos.esquema.size()]))) {
+		PreparedStatement ps = this.con.prepareStatement(sql.toString());
+		if (StringUtils.isNotBlank(esquema)) {
+			ps.setString(1, esquema);
+		} else if (!StringUtils
+				.isAllBlank(this.argumentos.esquema.toArray(new String[this.argumentos.esquema.size()]))) {
 			int ctd = 0;
 			for (String v : naoTemP)
 				ps.setString(++ctd, v);
@@ -84,41 +95,43 @@ public class LeitorMySQL implements Leitor {
 		return ps.executeQuery();
 	}
 
-	private ResultSet abrirRelacionamentos(Connection con, String esquema, String tabela) throws SQLException {
+	private ResultSet abrirRelacionamentos(String esquema, String tabela) throws SQLException {
 		StringBuilder sql = new StringBuilder();
-		sql.append("SELECT    COLUMN_NAME as nome,").append("\n");
-		sql.append("          REFERENCED_TABLE_SCHEMA as ref_esquema,").append("\n");
+		sql.append("SELECT    REFERENCED_TABLE_SCHEMA as ref_esquema,").append("\n");
 		sql.append("          REFERENCED_TABLE_NAME as ref_tabela,").append("\n");
-		sql.append("          REFERENCED_COLUMN_NAME as ref_coluna").append("\n");
+		sql.append("          REFERENCED_COLUMN_NAME as ref_coluna,").append("\n");
+		sql.append("          COLUMN_NAME as coluna").append("\n");
 		sql.append("FROM      INFORMATION_SCHEMA.KEY_COLUMN_USAGE").append("\n");
 		sql.append("WHERE     TABLE_SCHEMA = ?").append("\n");
 		sql.append("  AND     TABLE_NAME   = ?").append("\n");
 		sql.append("  AND     REFERENCED_TABLE_NAME IS NOT NULL").append("\n");
-		sql.append("ORDER BY 1,2,3").append("\n");
+		sql.append("ORDER BY  1,2,3").append("\n");
 
-		PreparedStatement ps = con.prepareStatement(sql.toString());
+		PreparedStatement ps = this.con.prepareStatement(sql.toString());
 		ps.setString(1, esquema);
 		ps.setString(2, tabela);
 		return ps.executeQuery();
 	}
 
-	private ResultSet abrirTabela(Connection con, String esquema) throws SQLException {
+	private ResultSet abrirTabela(String esquema, String tabela) throws SQLException {
 		StringBuilder sql = new StringBuilder();
 		sql.append("SELECT   TABLE_NAME as tabela").append("\n");
 		sql.append("FROM     INFORMATION_SCHEMA.TABLES").append("\n");
 		sql.append("WHERE    TABLE_SCHEMA = ?").append("\n");
 		List<String> naoTemP = new ArrayList<>(), temP = new ArrayList<>();
-		if (!StringUtils.isAllBlank(this.argumentos.tabela.toArray(new String[this.argumentos.tabela.size()]))) {
+		if (StringUtils.isNotBlank(tabela)) {
+			sql.append("AND             TABLE_NAME = ?");
+		} else if (!StringUtils.isAllBlank(this.argumentos.tabela.toArray(new String[this.argumentos.tabela.size()]))) {
 			StringBuilder naoTem = new StringBuilder(), tem = new StringBuilder();
 			for (int i = 0; i < this.argumentos.tabela.size(); i++) {
-				String tabela = this.argumentos.tabela.get(i);
-				if (StringUtils.isNotBlank(tabela)) {
-					if (tabela.startsWith("!")) {
+				String tabelaArg = this.argumentos.tabela.get(i);
+				if (StringUtils.isNotBlank(tabelaArg)) {
+					if (tabelaArg.startsWith("!")) {
 						naoTem.append(naoTem.length() == 0 ? "AND             TABLE_NAME NOT IN(?" : ", ?");
-						naoTemP.add(tabela.replaceFirst("\\!", ""));
+						naoTemP.add(tabelaArg.replaceFirst("\\!", ""));
 					} else {
 						tem.append(tem.length() == 0 ? "AND             TABLE_NAME IN(?" : ", ?");
-						temP.add(tabela);
+						temP.add(tabelaArg);
 					}
 				}
 			}
@@ -131,68 +144,145 @@ public class LeitorMySQL implements Leitor {
 		}
 		sql.append("ORDER BY 1").append("\n");
 
-		PreparedStatement ps = con.prepareStatement(sql.toString());
+		PreparedStatement ps = this.con.prepareStatement(sql.toString());
 		int ctd = 0;
 		ps.setString(++ctd, esquema);
-		if (!StringUtils.isAllBlank(this.argumentos.tabela.toArray(new String[this.argumentos.tabela.size()]))) {
-			for (String v : naoTemP)
-				ps.setString(++ctd, v);
-			for (String v : temP)
-				ps.setString(++ctd, v);
+		if (StringUtils.isNotBlank(tabela)) {
+			ps.setString(++ctd, tabela);
+		} else {
+			if (!StringUtils.isAllBlank(this.argumentos.tabela.toArray(new String[this.argumentos.tabela.size()]))) {
+				for (String v : naoTemP)
+					ps.setString(++ctd, v);
+				for (String v : temP)
+					ps.setString(++ctd, v);
+			}
 		}
 		return ps.executeQuery();
 	}
 
-	public List<Esquema> ler() throws Exception {
-
-		try (Connection con = new BDConexao().getConexao(this.argumentos)) {
-
-			List<Esquema> result = new ArrayList<>();
-
-			// listar esquemas
-			ResultSet esquemaRs = this.abrirEsquema(con);
-			while (esquemaRs.next()) {
-				Esquema esquema = new Esquema(esquemaRs.getString("esquema"));
-				result.add(esquema);
-
-				// listar tabelas
-				ResultSet tabelaRs = this.abrirTabela(con, esquema.toString());
-				while (tabelaRs.next()) {
-					Tabela tabela = esquema.add(new Tabela(tabelaRs.getString("tabela")));
-
-					// listar Colunas
-					ResultSet colunasRs = this.abrirColunas(con, esquema.toString(), tabela.toString());
-
-					while (colunasRs.next()) {
-						Coluna coluna = tabela.add(new Coluna(colunasRs.getString("nome")));
-
-						coluna.setChavePrimaria("pri".equalsIgnoreCase(colunasRs.getString("chave_primaria")));
-						coluna.setPermiteNulo("yes".equalsIgnoreCase(colunasRs.getString("permite_nulo")));
-						coluna.setTipo(colunasRs.getString("tipo"));
-						coluna.setComplemento(colunasRs.getString("complemento"));
-					}
+	private Coluna encontraColuna(Tabela tabela, String colunaNome) {
+		if (tabela != null) {
+			for (Coluna coluna : tabela.getColunas()) {
+				if (colunaNome.equals(coluna.getNome())) {
+					return coluna;
 				}
 			}
+		}
+		return null;
+	}
 
-//			for (Esquema esquema : result) {
-//				for (Tabela tabela : esquema.getTabelas()) {
-//					// listar relacoes
-//					ResultSet relacionamentoRs = this.abrirRelacionamentos(con, esquema.toString(), tabela.toString());
-//					while (relacionamentoRs.next()) {
-//						Relacionamento relacionamento = new Relacionamento();
-//
-//						List<String> list = new ArrayList<>();
-//						list.add(relacionamentoRs.getString("ref_esquema"));
-//						list.add(relacionamentoRs.getString("ref_tabela"));
-//						list.add(relacionamentoRs.getString("ref_coluna"));
-//						relacionamentoMap.put(relacionamentoRs.getString("nome"), list);
-//					}
-//				}
-//			}
+	private Esquema encontraEsquema(List<Esquema> lista, String esquemaNome) {
+		if (lista != null) {
+			for (Esquema esquema : lista) {
+				if (esquemaNome.equals(esquema.getNome())) {
+					return esquema;
+				}
+			}
+		}
+		return null;
+	}
 
-			return result;
+	private Tabela encontraTabela(List<Esquema> lista, String esquemaNome, String tabelaNome) {
+		Esquema esquema = this.encontraEsquema(lista, esquemaNome);
+		if (esquema != null) {
+			for (Tabela tabela : esquema.getTabelas()) {
+				if (esquemaNome.equals(esquema.getNome()) && tabelaNome.equals(tabela.getNome())) {
+					return tabela;
+				}
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public List<Esquema> ler() throws Exception {
+		return ler(null, null);
+	}
+
+	public List<Esquema> ler(List<Esquema> result, String esquemaNome, String tabelaNome) throws Exception {
+
+		if (result == null) {
+			result = new ArrayList<>();
 		}
 
+		// listar esquemas
+		ResultSet esquemaRs = this.abrirEsquema(esquemaNome);
+		while (esquemaRs.next()) {
+			Esquema esquema = this.encontraEsquema(result, esquemaRs.getString("esquema"));
+			if (esquema == null) {
+				esquema = new Esquema(esquemaRs.getString("esquema"));
+				result.add(esquema);
+			}
+
+			// listar tabelas
+			ResultSet tabelaRs = this.abrirTabela(esquema.getNome(), tabelaNome);
+			while (tabelaRs.next()) {
+				// verificar se a tabela já foi montada
+				if (encontraTabela(result, esquema.getNome(), tabelaRs.getString("tabela")) != null) {
+					continue;
+				}
+				Tabela tabela = esquema.add(new Tabela(tabelaRs.getString("tabela")));
+
+				// listar Colunas
+				ResultSet colunasRs = this.abrirColunas(esquema.getNome(), tabela.getNome());
+				while (colunasRs.next()) {
+					Coluna coluna = tabela.add(new Coluna(colunasRs.getString("nome")));
+
+					coluna.setChavePrimaria("pri".equalsIgnoreCase(colunasRs.getString("chave_primaria")));
+					coluna.setPermiteNulo("yes".equalsIgnoreCase(colunasRs.getString("permite_nulo")));
+					coluna.setTipo(colunasRs.getString("tipo"));
+					coluna.setComplemento(colunasRs.getString("complemento"));
+				}
+			}
+		}
+
+		// captar os relacionamentos
+		for (int i = 0; i < result.size(); i++) {
+			Esquema esquema = result.get(i);
+			for (int j = 0; j < esquema.getTabelas().size(); j++) {
+				Tabela tabela = esquema.getTabelas().get(j);
+				if (tabela.getRelacionamentos().size() > 0) {
+					continue;
+				}
+
+				// listar relacoes
+				ResultSet relacionamentoRs = this.abrirRelacionamentos(esquema.toString(), tabela.toString());
+
+				Relacionamento relacionamento = null;
+				Tabela t = null;
+
+				String esquemaRef = null;
+				String tabelaRef = null;
+				String colunaRef = null;
+				String coluna = null;
+
+				while (relacionamentoRs.next()) {
+					if (!(relacionamentoRs.getString("ref_esquema").equals(esquemaRef)
+							&& relacionamentoRs.getString("ref_tabela").equals(tabelaRef))) {
+						esquemaRef = relacionamentoRs.getString("ref_esquema");
+						tabelaRef = relacionamentoRs.getString("ref_tabela");
+
+						while ((t = this.encontraTabela(result, esquemaRef, tabelaRef)) == null) {
+							// recarregar a lista de esquema com o item avulso
+							ler(result, esquemaRef, tabelaRef);
+						}
+
+						relacionamento = new Relacionamento(t);
+						tabela.addRelacionamento(relacionamento);
+					}
+					colunaRef = relacionamentoRs.getString("ref_coluna");
+					coluna = relacionamentoRs.getString("coluna");
+					relacionamento.addColuna(this.encontraColuna(tabela, coluna), this.encontraColuna(t, colunaRef));
+				}
+			}
+		}
+
+		return result;
+
+	}
+
+	public List<Esquema> ler(String esquemaNome, String tabelaNome) throws Exception {
+		return ler(null, esquemaNome, tabelaNome);
 	}
 
 }
