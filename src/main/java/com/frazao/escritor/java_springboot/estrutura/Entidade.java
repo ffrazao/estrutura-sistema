@@ -13,33 +13,71 @@ import com.frazao.escritor.Escritor;
 import com.frazao.escritor.java_springboot.EscritorJavaSpringBoot;
 import com.frazao.leitor.bd.Coluna;
 import com.frazao.leitor.bd.Esquema;
+import com.frazao.leitor.bd.Relacionamento;
 import com.frazao.leitor.bd.Tabela;
 
 public class Entidade extends EstruturaBasica {
 
 	private Map<String, EntidadeInfo> mapa = new HashMap<>();
-	
+
 	public EscritorJavaSpringBoot getEscritor() {
 		return (EscritorJavaSpringBoot) this.escritor;
 	}
 
 	public Entidade(Escritor escritor) {
 		super(escritor);
-		
+
 		for (Esquema esquema : this.getEscritor().conteudo) {
 			for (Tabela tabela : esquema.getTabelas()) {
-				EntidadeInfo entidade = new EntidadeInfo(esquema, tabela);
+				EntidadeInfo entidadeInfo = new EntidadeInfo(esquema, tabela);
+
+				// ajustar as propriedades
 				for (Coluna coluna : tabela.getColunas()) {
-					entidade.addPropriedadeInfo(new PropriedadeInfo(esquema, tabela, coluna));
+					entidadeInfo.addPropriedadeInfo(new PropriedadeInfo(esquema, tabela, coluna));
 				}
-				if (mapa.containsKey(entidade.pacote.concat(entidade.nome))) {
-					throw new IllegalStateException("Definição repetida");
+
+				// armanzenar entidade
+				if (mapa.containsKey(entidadeInfo.pacote.concat(entidadeInfo.nome))) {
+					throw new IllegalStateException(
+							"Definição repetida " + entidadeInfo.pacote.concat(entidadeInfo.nome));
 				} else {
-					mapa.put(entidade.pacote.concat(entidade.nome), entidade);
+					mapa.put(entidadeInfo.pacote.concat(entidadeInfo.nome), entidadeInfo);
 				}
 			}
 		}
 
+		for (Entry<String, EntidadeInfo> item : mapa.entrySet()) {
+			EntidadeInfo entidadeInfo = item.getValue();
+			Tabela tabela = entidadeInfo.tabela;
+			// ajustar os relacionamentosmapamapa
+			for (Relacionamento relacionamento : tabela.getRelacionamentos()) {
+				if (relacionamento.getColunas().size() == 0) {
+					throw new IllegalStateException("Relacionamento sem colunas definidas " + relacionamento);
+				} else if (relacionamento.getColunas().size() == 1) {
+					for (PropriedadeInfo propriedadeInfo : entidadeInfo.propriedadeInfoList) {
+						if (propriedadeInfo.getNome().equals(relacionamento.getColunas().keySet().contains(null))) {
+							propriedadeInfo.setRefExterna(encontraPropriedade(mapa, relacionamento.getTabelaRef().getNome(), ""));
+							break;
+						}
+					}
+				} else {
+					
+				}
+			}
+		}
+
+	}
+	
+	private PropriedadeInfo encontraPropriedade(Map<String, EntidadeInfo> mapa, String entidadeNome, String propriedadeNome) {
+		for (Entry<String, EntidadeInfo> item : mapa.entrySet()) {
+			if (item.getValue().nome.equals(entidadeNome))
+			for (PropriedadeInfo propriedadeInfo: item.getValue().propriedadeInfoList) {				
+				if (propriedadeInfo.getNome().equals(propriedadeNome)) {
+					return propriedadeInfo;
+				}
+			}
+		}
+		return null;
 	}
 
 	@Override
@@ -103,7 +141,8 @@ public class Entidade extends EstruturaBasica {
 				w.append(String.format(""));
 				w.newLine();
 				w.newLine();
-				w.append(String.format("import %s.modelo.EntidadeBaseTemId;", this.getEscritor().argumentos.pacoteRaiz));
+				w.append(
+						String.format("import %s.modelo.EntidadeBaseTemId;", this.getEscritor().argumentos.pacoteRaiz));
 				w.newLine();
 				w.append(String.format(""));
 
@@ -124,12 +163,12 @@ public class Entidade extends EstruturaBasica {
 				w.append(String.format("private static final long serialVersionUID = 1L;"));
 				w.newLine();
 
-				for (PropriedadeInfo pi: item.getValue().propriedadeInfoList) {
+				for (PropriedadeInfo pi : item.getValue().propriedadeInfoList) {
 					w.newLine();
 					w.append(pi.toString());
 					w.newLine();
 				}
-				
+
 				w.newLine();
 				w.newLine();
 

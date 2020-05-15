@@ -16,9 +16,9 @@ public class EntidadeInfo {
 
 	public String nome;
 	
-	public String esquema;
+	public Esquema esquema;
 	
-	public String tabela;
+	public Tabela tabela;
 	
 	public List<PropriedadeInfo> propriedadeInfoList = new ArrayList<>();
 
@@ -26,8 +26,8 @@ public class EntidadeInfo {
 		this.pacote = esquema.getNome();
 		this.nome = CaseUtils.toCamelCase(tabela.getNome(), true, new char[] { '_', '.' });
 		
-		this.esquema = esquema.getNome();
-		this.tabela = tabela.getNome();
+		this.esquema = esquema;
+		this.tabela = tabela;
 	}
 	
 	public EntidadeInfo addPropriedadeInfo(PropriedadeInfo valor) {
