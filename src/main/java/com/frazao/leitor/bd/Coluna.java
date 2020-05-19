@@ -6,16 +6,30 @@ public class Coluna extends Nomeavel {
 
 	private String complemento;
 	
+	private Esquema esquema;
+	
 	private boolean permiteNulo;
+	
+	private Tabela tabela;
 	
 	private String tipo;
 	
-	public Coluna(String nome) {
+	public Coluna(Esquema esquema, Tabela tabela, String nome) {
 		super(nome);
+		this.esquema = esquema;
+		this.tabela = tabela;
 	}
 
 	public String getComplemento() {
 		return complemento;
+	}
+
+	public Esquema getEsquema() {
+		return esquema;
+	}
+
+	public Tabela getTabela() {
+		return tabela;
 	}
 
 	public String getTipo() {

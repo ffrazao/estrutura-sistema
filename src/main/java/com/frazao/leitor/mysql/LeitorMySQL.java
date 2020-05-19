@@ -221,12 +221,12 @@ public class LeitorMySQL implements Leitor {
 				if (encontraTabela(result, esquema.getNome(), tabelaRs.getString("tabela")) != null) {
 					continue;
 				}
-				Tabela tabela = esquema.add(new Tabela(tabelaRs.getString("tabela")));
+				Tabela tabela = esquema.add(new Tabela(esquema, tabelaRs.getString("tabela")));
 
 				// listar Colunas
 				ResultSet colunasRs = this.abrirColunas(esquema.getNome(), tabela.getNome());
 				while (colunasRs.next()) {
-					Coluna coluna = tabela.add(new Coluna(colunasRs.getString("nome")));
+					Coluna coluna = tabela.add(new Coluna(esquema, tabela, colunasRs.getString("nome")));
 
 					coluna.setChavePrimaria("pri".equalsIgnoreCase(colunasRs.getString("chave_primaria")));
 					coluna.setPermiteNulo("yes".equalsIgnoreCase(colunasRs.getString("permite_nulo")));

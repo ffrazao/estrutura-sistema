@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.CaseUtils;
 
 import com.frazao.escritor.Escritor;
 import com.frazao.escritor.java_springboot.EscritorJavaSpringBoot;
@@ -18,11 +19,7 @@ import com.frazao.leitor.bd.Tabela;
 
 public class Entidade extends EstruturaBasica {
 
-	private Map<String, EntidadeInfo> mapa = new HashMap<>();
-
-	public EscritorJavaSpringBoot getEscritor() {
-		return (EscritorJavaSpringBoot) this.escritor;
-	}
+	public Map<String, EntidadeInfo> mapa = new HashMap<>();
 
 	public Entidade(Escritor escritor) {
 		super(escritor);
@@ -33,7 +30,7 @@ public class Entidade extends EstruturaBasica {
 
 				// ajustar as propriedades
 				for (Coluna coluna : tabela.getColunas()) {
-					entidadeInfo.addPropriedadeInfo(new PropriedadeInfo(esquema, tabela, coluna));
+					entidadeInfo.addPropriedadeInfo(new PropriedadeInfo(entidadeInfo, coluna));
 				}
 
 				// armanzenar entidade
@@ -46,35 +43,33 @@ public class Entidade extends EstruturaBasica {
 			}
 		}
 
-		for (Entry<String, EntidadeInfo> item : mapa.entrySet()) {
-			EntidadeInfo entidadeInfo = item.getValue();
+		// ajustar os relacionamentos
+		for (EntidadeInfo entidadeInfo : mapa.values()) {
 			Tabela tabela = entidadeInfo.tabela;
+
 			// ajustar os relacionamentosmapamapa
 			for (Relacionamento relacionamento : tabela.getRelacionamentos()) {
-				if (relacionamento.getColunas().size() == 0) {
-					throw new IllegalStateException("Relacionamento sem colunas definidas " + relacionamento);
-				} else if (relacionamento.getColunas().size() == 1) {
-					for (PropriedadeInfo propriedadeInfo : entidadeInfo.propriedadeInfoList) {
-						if (propriedadeInfo.getNome().equals(relacionamento.getColunas().keySet().contains(null))) {
-							propriedadeInfo.setRefExterna(encontraPropriedade(mapa, relacionamento.getTabelaRef().getNome(), ""));
-							break;
-						}
-					}
-				} else {
-					
+
+				// identificar a entidade externa
+				Tabela tabelaRef = relacionamento.getTabelaRef();
+				EntidadeInfo entidadeInfoRef = this.encontraEntidade(mapa, tabelaRef);
+
+				// identificar o vinculo de colunas
+				for (Entry<Coluna, Coluna> rel : relacionamento.getColunas().entrySet()) {
+					entidadeInfo.getPropriedade(rel.getKey())
+							.setRefExterna(entidadeInfoRef.getPropriedade(rel.getValue()));
+					entidadeInfoRef.addList(entidadeInfo);
 				}
 			}
 		}
 
 	}
-	
-	private PropriedadeInfo encontraPropriedade(Map<String, EntidadeInfo> mapa, String entidadeNome, String propriedadeNome) {
-		for (Entry<String, EntidadeInfo> item : mapa.entrySet()) {
-			if (item.getValue().nome.equals(entidadeNome))
-			for (PropriedadeInfo propriedadeInfo: item.getValue().propriedadeInfoList) {				
-				if (propriedadeInfo.getNome().equals(propriedadeNome)) {
-					return propriedadeInfo;
-				}
+
+	private EntidadeInfo encontraEntidade(Map<String, EntidadeInfo> mapa, Tabela tabela) {
+		for (EntidadeInfo item : mapa.values()) {
+			if (item.esquema.getNome().equals(tabela.getEsquema().getNome())
+					&& item.tabela.getNome().equals(tabela.getNome())) {
+				return item;
 			}
 		}
 		return null;
@@ -86,26 +81,27 @@ public class Entidade extends EstruturaBasica {
 
 		String pacote = String.format("%s.modelo.entidade", this.getEscritor().argumentos.pacoteRaiz);
 
-		for (Entry<String, EntidadeInfo> item : mapa.entrySet()) {
-			if (item.getValue().pacote == null) {
+		for (EntidadeInfo item : mapa.values()) {
+			if (item.pacote == null) {
 				continue;
 			}
 
 			File arquivoLocal = dir;
-			if (StringUtils.isNotBlank(item.getValue().pacote)) {
-				arquivoLocal = new File(dir, item.getValue().pacote);
+			if (StringUtils.isNotBlank(item.pacote)) {
+				arquivoLocal = new File(dir, item.pacote);
 			}
 			arquivoLocal.mkdirs();
 
-			arquivoLocal = new File(arquivoLocal, item.getValue().nome.concat(".java"));
+			arquivoLocal = new File(arquivoLocal, item.nome.concat(".java"));
+
+			Propriedade propriedade = new Propriedade(this.escritor);
 
 			try (BufferedWriter w = new BufferedWriter(new FileWriter(arquivoLocal, false))) {
 
-				item.getValue().pacoteFinal = pacote.concat(
-						StringUtils.isNotBlank(item.getValue().pacote) ? ".".concat(item.getValue().pacote) : "");
+				item.pacoteFinal = pacote.concat(StringUtils.isNotBlank(item.pacote) ? ".".concat(item.pacote) : "");
 
 				// pacote
-				w.append("package ").append(item.getValue().pacoteFinal).append(";");
+				w.append("package ").append(item.pacoteFinal).append(";");
 				w.newLine();
 				w.newLine();
 
@@ -130,6 +126,18 @@ public class Entidade extends EstruturaBasica {
 				w.newLine();
 				w.append(String.format("import javax.persistence.Basic;"));
 				w.newLine();
+				w.append(String.format("import javax.persistence.OneToOne;"));
+				w.newLine();
+				w.append(String.format("import javax.persistence.ManyToOne;"));
+				w.newLine();
+				w.append(String.format("import javax.persistence.JoinColumn;"));
+				w.newLine();
+				w.append(String.format("import javax.persistence.Transient;"));
+				w.newLine();
+				w.append(String.format("import javax.persistence.FetchType;"));
+				w.newLine();
+				w.append(String.format("import javax.persistence.MapsId;"));
+				w.newLine();
 				w.append(String.format(""));
 				w.newLine();
 				w.append(String.format("import com.fasterxml.jackson.annotation.JsonIgnore;"));
@@ -137,6 +145,10 @@ public class Entidade extends EstruturaBasica {
 				w.append(String.format("import lombok.Data;"));
 				w.newLine();
 				w.append(String.format("import lombok.EqualsAndHashCode;"));
+				w.newLine();
+				w.append(String.format("import java.util.List;"));
+				w.newLine();
+				w.append(String.format("import java.math.BigDecimal;"));
 				w.newLine();
 				w.append(String.format(""));
 				w.newLine();
@@ -147,25 +159,33 @@ public class Entidade extends EstruturaBasica {
 				w.append(String.format(""));
 
 				// declarar a classe
-				w.append(String.format("@Entity(name = \"%s\")", item.getValue().nome));
+				w.append(String.format("@Entity(name = \"%s\")", item.nome));
 				w.newLine();
-				w.append(String.format("@Table(schema = \"%s\", name = \"%s\")", item.getValue().esquema,
-						item.getValue().tabela));
+				w.append(String.format("@Table(schema = \"%s\", name = \"%s\")", item.esquema, item.tabela));
 				w.newLine();
 				w.append(String.format("@Data"));
 				w.newLine();
 				w.append(String.format("@EqualsAndHashCode(callSuper = true)"));
 				w.newLine();
-				w.append(String.format("public class %s extends EntidadeBaseTemId {", item.getValue().nome));
+				w.append(String.format("public class %s extends EntidadeBaseTemId {", item.nome));
 				w.newLine();
 
 				w.append("   ");
 				w.append(String.format("private static final long serialVersionUID = 1L;"));
 				w.newLine();
 
-				for (PropriedadeInfo pi : item.getValue().propriedadeInfoList) {
+				// adicionar propriedades
+				for (PropriedadeInfo pi : item.propriedadeInfoList) {
 					w.newLine();
-					w.append(pi.toString());
+					w.append(propriedade.escrever(pi));
+					w.newLine();
+				}
+				
+				// adicionar referencias externas
+				for (EntidadeInfo ei: item.getList()) {
+					w.newLine();
+					w.append(String.format(" @Transient private List<%s> %sList;", ei.nome, 
+							CaseUtils.toCamelCase(ei.tabela.getNome(), false, new char[] { '_', '.' })));
 					w.newLine();
 				}
 
@@ -176,6 +196,10 @@ public class Entidade extends EstruturaBasica {
 			}
 
 		}
+	}
+
+	public EscritorJavaSpringBoot getEscritor() {
+		return (EscritorJavaSpringBoot) this.escritor;
 	}
 
 }

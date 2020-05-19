@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.util.ResourceUtils;
+
 import com.frazao.Argumentos;
 import com.frazao.escritor.Escritor;
 import com.frazao.escritor.java_springboot.estrutura.Bo;
@@ -39,9 +41,9 @@ public class EscritorJavaSpringBoot implements Escritor {
 		this.argumentos = argumentos;
 	}
 
-	private void copiarArquivosEstaticos(List<Esquema> conteudo, Map<String, File> diretorios) {
-		// TODO Auto-generated method stub
-
+	private void copiarArquivosEstaticos(List<Esquema> conteudo, Map<String, File> diretorios) throws Exception {
+		File file = ResourceUtils.getFile("classpath:estatico//bo");
+		System.out.println(file.exists());
 	}
 
 	private Map<String, File> criarDiretoriosPadrao() {

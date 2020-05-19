@@ -10,26 +10,33 @@ public class PropriedadeInfo {
 
 	private Coluna coluna;
 
-	private Esquema esquema;
+	private EntidadeInfo entidadeInfo;
 
+	private Esquema esquema;
+	
 	private String nome;
 
 	private PropriedadeInfo refExterna;
 
 	private Tabela tabela;
 
-	private String tipoJava;
+	private Class<?> tipoJava;
 
-	public PropriedadeInfo(Esquema esquema, Tabela tabela, Coluna coluna) {
+	public PropriedadeInfo(EntidadeInfo entidadeInfo, Coluna coluna) {
 		super();
-		this.esquema = esquema;
-		this.tabela = tabela;
+		this.entidadeInfo = entidadeInfo;
+		this.esquema = entidadeInfo.esquema;
+		this.tabela = entidadeInfo.tabela;
 		this.coluna = coluna;
 		this.nome = CaseUtils.toCamelCase(this.coluna.getNome(), false, new char[] { '_', '.' });
 	}
 
 	public Coluna getColuna() {
 		return coluna;
+	}
+
+	public EntidadeInfo getEntidadeInfo() {
+		return entidadeInfo;
 	}
 
 	public Esquema getEsquema() {
@@ -48,12 +55,21 @@ public class PropriedadeInfo {
 		return tabela;
 	}
 
-	public String getTipoJava() {
+	public Class<?> getTipoJava() {
 		return tipoJava;
 	}
 
 	public void setRefExterna(PropriedadeInfo refExterna) {
 		this.refExterna = refExterna;
+	}
+
+	public void setTipoJava(Class<?> tipoJava) {
+		this.tipoJava = tipoJava;
+	}
+	
+	@Override
+	public String toString() {
+		return this.nome;
 	}
 
 }

@@ -1,0 +1,14 @@
+spring: 
+  application:
+    name: Laço de Amor Servidor
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+  datasource:
+    url: jdbc:mysql://localhost:3306/laco_de_amor
+    username: root
+    password: root
+ 
+logging:
+  level:
+    org.springframework.web: TRACE
+    org.springframework.security: TRACE
