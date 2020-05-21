@@ -9,9 +9,9 @@ import org.apache.commons.lang3.StringUtils;
 import com.frazao.escritor.Escritor;
 import com.frazao.escritor.java_springboot.EscritorJavaSpringBoot;
 
-public class Filtro extends EstruturaBasica {
+public class FiltroDTO extends EstruturaBasica {
 
-	public Filtro(Escritor escritor) {
+	public FiltroDTO(Escritor escritor) {
 		super(escritor);
 	}
 
@@ -43,18 +43,36 @@ public class Filtro extends EstruturaBasica {
 				w.newLine();
 				w.newLine();
 
+				w.append("import lombok.Data;");
+				w.newLine();
+				w.append("import lombok.EqualsAndHashCode;");
+				w.newLine();
+				w.append("import lombok.NoArgsConstructor;");
+				w.newLine();
+				w.append("import lombok.ToString;");
+				w.newLine();
+				w.newLine();
+
 				// importações
 				w.append("import ").append(pacote).append(".FiltroDTO;");
 				w.newLine();
 				w.newLine();
 
 				// declarar a classe
+				w.append("@Data");
+				w.newLine();
+				w.append("@NoArgsConstructor");
+				w.newLine();
+				w.append("@EqualsAndHashCode");
+				w.newLine();
+				w.append("@ToString");
+				w.newLine();
 				w.append(String.format("public class %sFiltroDTO implements FiltroDTO {", item.nome));
 				w.newLine();
 				w.newLine();
 
 				w.append("   ");
-				w.append(String.format("private static final long serialVersionUID = 1L;"));
+				w.append(String.format("   private static final long serialVersionUID = 1L;"));
 				w.newLine();
 				w.newLine();
 

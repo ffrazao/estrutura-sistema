@@ -95,13 +95,21 @@ public class Entidade extends EstruturaBasica {
 			arquivoLocal = new File(arquivoLocal, item.nome.concat(".java"));
 
 			Propriedade propriedade = new Propriedade(this.escritor);
+			
+			String tipoPk = null;
+			
+			for (PropriedadeInfo pi : item.propriedadeInfoList) {
+				if (pi.getColuna().isChavePrimaria()) {
+					tipoPk = pi.getTipoJava() == null ? "Integer" : pi.getTipoJava().getCanonicalName();
+				}
+			}
 
 			try (BufferedWriter w = new BufferedWriter(new FileWriter(arquivoLocal, false))) {
 
 				item.pacoteFinal = pacote.concat(StringUtils.isNotBlank(item.pacote) ? ".".concat(item.pacote) : "");
 
 				// pacote
-				w.append("package ").append(item.pacoteFinal).append(";");
+				w.append(String.format("package %s;", item.pacoteFinal));
 				w.newLine();
 				w.newLine();
 
@@ -144,19 +152,19 @@ public class Entidade extends EstruturaBasica {
 				w.newLine();
 				w.append(String.format("import lombok.Data;"));
 				w.newLine();
+				w.append(String.format("import lombok.NoArgsConstructor;"));
+				w.newLine();
+				w.append(String.format("import lombok.ToString;"));
+				w.newLine();
 				w.append(String.format("import lombok.EqualsAndHashCode;"));
 				w.newLine();
 				w.append(String.format("import java.util.List;"));
 				w.newLine();
 				w.append(String.format("import java.math.BigDecimal;"));
 				w.newLine();
-				w.append(String.format(""));
+				w.append(String.format("import %s.modelo.entidade.EntidadeBaseTemId;", this.getEscritor().argumentos.pacoteRaiz));
 				w.newLine();
 				w.newLine();
-				w.append(
-						String.format("import %s.modelo.EntidadeBaseTemId;", this.getEscritor().argumentos.pacoteRaiz));
-				w.newLine();
-				w.append(String.format(""));
 
 				// declarar a classe
 				w.append(String.format("@Entity(name = \"%s\")", item.nome));
@@ -165,13 +173,19 @@ public class Entidade extends EstruturaBasica {
 				w.newLine();
 				w.append(String.format("@Data"));
 				w.newLine();
-				w.append(String.format("@EqualsAndHashCode(callSuper = true)"));
+				w.append(String.format("@NoArgsConstructor"));
 				w.newLine();
-				w.append(String.format("public class %s extends EntidadeBaseTemId {", item.nome));
+				w.append(String.format("@EqualsAndHashCode(callSuper = true)"));
+				w.newLine();				
+				w.append(String.format("@ToString"));
+				w.newLine();				
+				
+				w.append(String.format("public class %s extends EntidadeBaseTemId<%s> {", item.nome, tipoPk));
+				w.newLine();
 				w.newLine();
 
-				w.append("   ");
-				w.append(String.format("private static final long serialVersionUID = 1L;"));
+				w.append(String.format("   private static final long serialVersionUID = 1L;"));
+				w.newLine();
 				w.newLine();
 
 				// adicionar propriedades
@@ -193,6 +207,7 @@ public class Entidade extends EstruturaBasica {
 				w.newLine();
 
 				w.append("}");
+				w.newLine();
 			}
 
 		}

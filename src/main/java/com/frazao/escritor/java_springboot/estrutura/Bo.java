@@ -23,6 +23,8 @@ public class Bo extends EstruturaBasica {
 
 		String pacoteDao = String.format("%s.dao", this.getEscritor().argumentos.pacoteRaiz);
 
+		String pacoteFiltroDTO = String.format("%s.modelo.dto", this.getEscritor().argumentos.pacoteRaiz);
+
 		for (EntidadeInfo item : this.getEscritor().entidade.mapa.values()) {
 			if (item.pacote == null) {
 				continue;
@@ -35,63 +37,74 @@ public class Bo extends EstruturaBasica {
 			arquivoLocal.mkdirs();
 
 			arquivoLocal = new File(arquivoLocal, item.nome.concat("BO.java"));
+			
+			String tipoPk = null;
+
+			for (PropriedadeInfo pi : item.propriedadeInfoList) {
+				if (pi.getColuna().isChavePrimaria()) {
+					tipoPk = pi.getTipoJava() == null ? "Integer" : pi.getTipoJava().getCanonicalName();
+				}
+			}
 
 			try (BufferedWriter w = new BufferedWriter(new FileWriter(arquivoLocal, false))) {
 
 				String pacoteFinal = pacote.concat(StringUtils.isNotBlank(item.pacote) ? ".".concat(item.pacote) : "");
 				String pacoteFinalDao = pacoteDao
 						.concat(StringUtils.isNotBlank(item.pacote) ? ".".concat(item.pacote) : "");
+				String pacoteFinalFiltroDTO = pacoteFiltroDTO
+						.concat(StringUtils.isNotBlank(item.pacote) ? ".".concat(item.pacote) : "");
 
 				// pacote
-				w.append("package ").append(pacoteFinal).append(";");
+				w.append(String.format("package %s;", pacoteFinal));
 				w.newLine();
 				w.newLine();
 
 				// importações
-				w.append("import ").append(pacote).append(".CRUDBO;");
-				w.newLine();
 				w.append("import org.springframework.beans.factory.annotation.Autowired;");
 				w.newLine();
 				w.append("import org.springframework.stereotype.Service;");
 				w.newLine();
 				w.newLine();
-				
-				
-				
-				String tipoPk = null;
-				for (PropriedadeInfo pi : item.propriedadeInfoList) {
-					if (pi.getColuna().isChavePrimaria()) {
-						tipoPk = pi.getTipoJava() == null ? "Integer" : pi.getTipoJava().getCanonicalName();
-					}
-				}
+				w.append(String.format("import %s.CRUDBO;", pacote));
+				w.newLine();
+				w.append(String.format("import %s.%sDAO;", pacoteFinalDao, item.nome));
+				w.newLine();
+				w.append(String.format("import %s.%sFiltroDTO;", pacoteFinalFiltroDTO, item.nome));
+				w.newLine();
+				w.append(String.format("import %s.%s;", item.pacoteFinal, item.nome));
+				w.newLine();
+				w.newLine();
 
 				// declarar a classe
-				w.append(String.format("@Service public class %sBO extends CRUDBO<%s.%s, %s> {", item.nome, item.pacoteFinal,
-						item.nome, tipoPk));
+				w.append(String.format("@Service"));
+				w.newLine();
+				w.append(String.format("public class %sBO extends CRUDBO<%s, %s, %sFiltroDTO> {", item.nome, item.nome,
+						tipoPk, item.nome));
 				w.newLine();
 				w.newLine();
 
-				w.append(String.format("   public %sBO(@Autowired %s.%sDAO dao) {", item.nome, pacoteFinalDao, item.nome));
+				w.append(String.format("   public %sBO(@Autowired %sDAO dao) {", item.nome,
+						item.nome));
 				w.newLine();
 				w.append(String.format("      super(dao);"));
 				w.newLine();
 				w.append(String.format("   }"));
 				w.newLine();
 				w.newLine();
-				w.newLine();
 				w.append(String.format(""));
 				w.newLine();
 
-				w.append(String.format("public %s.%sDAO getDAO() {", pacoteFinalDao, item.nome));
+				w.append(String.format("   public %sDAO getDAO() {", item.nome));
 				w.newLine();
-				w.append(String.format("	return (%s.%sDAO) super.getDAO();", pacoteFinalDao, item.nome));
+				w.append(String.format("	  return (%sDAO) super.getDAO();", item.nome));
 				w.newLine();
-				w.append(String.format("}"));
+				w.append(String.format("   }"));
+				w.newLine();
 				w.newLine();
 				
-				w.newLine();
-				w.newLine();
 				w.append("}");
+				w.newLine();
+				w.newLine();
 			}
 
 		}

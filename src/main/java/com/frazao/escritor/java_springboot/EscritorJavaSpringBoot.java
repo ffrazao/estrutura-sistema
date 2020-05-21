@@ -13,7 +13,7 @@ import com.frazao.escritor.java_springboot.estrutura.Bo;
 import com.frazao.escritor.java_springboot.estrutura.Dao;
 import com.frazao.escritor.java_springboot.estrutura.Dominio;
 import com.frazao.escritor.java_springboot.estrutura.Entidade;
-import com.frazao.escritor.java_springboot.estrutura.Filtro;
+import com.frazao.escritor.java_springboot.estrutura.FiltroDTO;
 import com.frazao.escritor.java_springboot.estrutura.Rest;
 import com.frazao.leitor.bd.Esquema;
 
@@ -33,7 +33,7 @@ public class EscritorJavaSpringBoot implements Escritor {
 
 	public Entidade entidade;
 
-	public Filtro filtro;
+	public FiltroDTO filtro;
 
 	public Rest rest;
 
@@ -123,7 +123,7 @@ public class EscritorJavaSpringBoot implements Escritor {
 
 		dominio = new Dominio(this);
 		entidade = new Entidade(this);
-		filtro = new Filtro(this);
+		filtro = new FiltroDTO(this);
 		dao = new Dao(this);
 		bo = new Bo(this);
 		rest = new Rest(this);

@@ -142,6 +142,8 @@ public class Dominio extends EstruturaBasica {
 				w.newLine();
 				w.newLine();
 
+				w.append("   @Override");
+				w.newLine();
 				w.append("   public String toString() {");
 				w.newLine();
 				w.append("      return this.getDescricao();");
