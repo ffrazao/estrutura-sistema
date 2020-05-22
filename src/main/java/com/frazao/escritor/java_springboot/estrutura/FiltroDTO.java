@@ -65,7 +65,7 @@ public class FiltroDTO extends EstruturaBasica {
 				w.newLine();
 				w.append("@EqualsAndHashCode");
 				w.newLine();
-				w.append("@ToString");
+				w.append("");
 				w.newLine();
 				w.append(String.format("public class %sFiltroDTO implements FiltroDTO {", item.nome));
 				w.newLine();

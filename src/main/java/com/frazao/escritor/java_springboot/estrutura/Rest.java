@@ -103,7 +103,7 @@ public class Rest extends EstruturaBasica {
 
 				w.append(String.format("   public %sBO getBO() {", item.nome));
 				w.newLine();
-				w.append(String.format("	  return this.getBO();"));
+				w.append(String.format("	  return super.getBO();"));
 				w.newLine();
 				w.append(String.format("   }"));
 				w.newLine();

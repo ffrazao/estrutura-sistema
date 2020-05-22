@@ -177,7 +177,7 @@ public class Entidade extends EstruturaBasica {
 				w.newLine();
 				w.append(String.format("@EqualsAndHashCode(callSuper = true)"));
 				w.newLine();				
-				w.append(String.format("@ToString"));
+				w.append(String.format(""));
 				w.newLine();				
 				
 				w.append(String.format("public class %s extends EntidadeBaseTemId<%s> {", item.nome, tipoPk));
