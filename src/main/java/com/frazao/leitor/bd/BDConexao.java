@@ -12,21 +12,19 @@ import com.frazao.Conexao;
 public class BDConexao implements Conexao<Connection> {
 
 	@Override
-	public Connection getConexao(Argumentos argumentos) throws SQLException {
+	public Connection criarConexao(Argumentos argumentos) throws SQLException {
 		if (StringUtils.isBlank(argumentos.url)) {
-			throw new SQLException("Url de conexão não informada");
+			throw new SQLException("URL de conexão ao banco de dados não informada");
 		}
-		
-		String u = argumentos.url;
 
-		Connection con = null;
+		Connection result = null;
 		if (StringUtils.isNoneBlank(argumentos.usuario, argumentos.senha)) {
-			con = DriverManager.getConnection(u, argumentos.usuario, argumentos.senha);
+			result = DriverManager.getConnection(argumentos.url, argumentos.usuario, argumentos.senha);
 		} else {
-			con = DriverManager.getConnection(u);
+			result = DriverManager.getConnection(argumentos.url);
 		}
 
-		return con;
+		return result;
 	}
 
 }

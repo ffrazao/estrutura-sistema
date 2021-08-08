@@ -25,7 +25,7 @@ public class LeitorMySQL implements Leitor {
 
 	public LeitorMySQL(Argumentos argumentos) throws SQLException {
 		this.argumentos = argumentos;
-		this.con = new BDConexao().getConexao(this.argumentos);
+		this.con = new BDConexao().criarConexao(this.argumentos);
 	}
 
 	private ResultSet abrirColunas(String esquema, String tabela) throws SQLException {
